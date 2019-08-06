@@ -12,6 +12,7 @@ using JDataEngine;
 using JurisAuthenticator;
 using JurisUtilityBase.Properties;
 using System.Data.OleDb;
+using System.Drawing;
 
 namespace JurisUtilityBase
 {
@@ -88,6 +89,16 @@ namespace JurisUtilityBase
                 ///GetFieldLengths();
             }
 
+            string sql = "SELECT  Name,convert(varchar,LastRuntime, 101) as LastRunDate,case when Active = 1 then 'Y' else 'N' end as Active,ID FROM ScheduleTasks";
+            DataSet Tasks = _jurisUtility.RecordsetFromSQL(sql);
+            dataGridView2.AutoGenerateColumns = true;
+            dataGridView2.DataSource = Tasks.Tables[0]; // dataset
+            dataGridView2.Columns[0].Width = 220;
+            dataGridView2.Columns[1].Width = 100;
+            dataGridView2.Columns[2].Width = 50;
+
+
+
         }
 
 
@@ -101,12 +112,49 @@ namespace JurisUtilityBase
             // Enter your SQL code here
             // To run a T-SQL statement with no results, int RecordsAffected = _jurisUtility.ExecuteNonQueryCommand(0, SQL);
             // To get an ADODB.Recordset, ADODB.Recordset myRS = _jurisUtility.RecordsetFromSQL(SQL);
-            string    SQL = "UPDATE ScheduleTasks SET LastRuntime = GETDATE()";
-            if (checkBox1.Checked)
-                SQL = SQL + " WHERE (CAST(Active AS BIT) = 1)";
 
-            _jurisUtility.ExecuteNonQueryCommand(0, SQL);
-            UpdateStatus("Distributions reset successfuly.", 1, 1);
+            DateTime dt = dateTimePicker1.Value.Date;
+
+            if (checkBox2.Checked)
+            {
+                string venList = "";
+                foreach (DataGridViewRow r in dataGridView2.SelectedRows)
+                {
+                    venList = venList + "'" + r.Cells[3].Value.ToString() + "',";
+                }
+
+                venList = venList.TrimEnd(',');
+
+                if (!string.IsNullOrEmpty(venList))
+                {
+                    DialogResult d = MessageBox.Show("Are you sure you want to update these Distributions?", "Exception report", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (d == System.Windows.Forms.DialogResult.Yes)
+                    {
+                        string SQL = "UPDATE ScheduleTasks SET LastRuntime = '" + dt.ToString("yyyy-MM-dd HH:mm:ss") + "' where id in (" + venList + ")";
+                        _jurisUtility.ExecuteNonQueryCommand(0, SQL);
+                        UpdateStatus("Distributions reset successfuly.", 1, 1);
+                        MessageBox.Show("Distributions updated successfully", "Success!", MessageBoxButtons.OK, MessageBoxIcon.None);
+                    }
+                }
+
+
+            }
+            else
+            {
+                DialogResult d = MessageBox.Show("Are you sure you want to update these Distributions?", "Exception report", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (d == System.Windows.Forms.DialogResult.Yes)
+                {
+                    string SQL = "UPDATE ScheduleTasks SET LastRuntime = '" + dt.ToString("yyyy-MM-dd HH:mm:ss") + "'";
+                    if (checkBox1.Checked)
+                        SQL = SQL + " WHERE (CAST(Active AS BIT) = 1)";
+
+                    _jurisUtility.ExecuteNonQueryCommand(0, SQL);
+                    UpdateStatus("Distributions reset successfuly.", 1, 1);
+                    MessageBox.Show("Distributions updated successfully", "Success!", MessageBoxButtons.OK, MessageBoxIcon.None);
+                }
+
+            }
+            
         }
         private bool VerifyFirmName()
         {
@@ -301,6 +349,29 @@ namespace JurisUtilityBase
 
 
             return reportSQL;
+        }
+
+        private void checkBox2_CheckedChanged(object sender, EventArgs e)
+        {
+            if (checkBox2.Checked)
+            {
+                checkBox1.Location = new Point(308, 435);
+                button1.Location = new Point(188, 468);
+                this.Size = new Size(674, 620);
+                dataGridView2.Size = new Size(409,187);
+                dataGridView2.Visible = true;
+                checkBox1.Visible = false;
+            }
+            else
+            {
+                checkBox1.Location = new Point(308,255);
+                button1.Location = new Point(188,293);
+                this.Size = new Size(674,435);
+                dataGridView2.Size = new Size(409,23);
+                dataGridView2.Visible = false;
+                checkBox1.Visible = true;
+            }
+
         }
 
 
